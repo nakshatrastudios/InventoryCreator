@@ -33,11 +33,28 @@ public class ItemEditor : EditorWindow
 
         EditorGUILayout.BeginHorizontal();
         itemDatabase = (ItemDatabase)EditorGUILayout.ObjectField("Item Database", itemDatabase, typeof(ItemDatabase), false);
+        
         if (GUILayout.Button("+"))
         {
-            // Logic for creating a new ItemDatabase and adding it to your list of databases
-            itemDatabase = CreateNewItemDatabase();
+            string baseName = "NewItemDatabase";
+            string path = "Assets/InventorySystem/";
+            int index = 1;
+
+            // Check if a file with the same name already exists
+            while (AssetDatabase.LoadAssetAtPath<ItemDatabase>(path + baseName + index + ".asset") != null)
+            {
+                index++; // Increment the index if a file with the same name exists
+            }
+
+            // Create a new ItemDatabase with a unique name
+            ItemDatabase newItemDatabase = ScriptableObject.CreateInstance<ItemDatabase>();
+            AssetDatabase.CreateAsset(newItemDatabase, path + baseName + index + ".asset");
+            AssetDatabase.SaveAssets();
+
+            itemDatabase = newItemDatabase; // Assign the new ItemDatabase to the itemDatabase field
         }
+
+
         EditorGUILayout.EndHorizontal(); // Close the horizontal group
 
         GUILayout.Label("Stat Modification", EditorStyles.boldLabel);
@@ -54,6 +71,47 @@ public class ItemEditor : EditorWindow
             statModifications.Add(new Item.StatModification());
         }
 
+        // if (GUILayout.Button("Create Item"))
+        // {
+        //     Item newItem = ScriptableObject.CreateInstance<Item>();
+        //     newItem.itemName = itemName;
+        //     newItem.itemID = System.Guid.NewGuid().ToString();
+        //     newItem.itemQuantity = itemQuantity;
+        //     newItem.itemIcon = itemIcon;
+        //     newItem.stackable = stackable;
+        //     newItem.itemType = itemType;
+        //     newItem.statModifications = statModifications;
+
+        //     // Create a new GameObject
+        //     GameObject newGameObject = new GameObject(itemName);
+
+        //     Pickup pickup = newGameObject.AddComponent<Pickup>();
+        //     pickup.item = newItem;
+
+        //     SphereCollider sphereCollider = newGameObject.AddComponent<SphereCollider>();
+        //     sphereCollider.radius = 2f;
+        //     sphereCollider.isTrigger = true;
+
+        //     // Add the new item to the selected ItemDatabase
+        //     if (itemDatabase != null)
+        //     {
+        //         itemDatabase.items.Add(newItem);
+        //     }
+        //     else
+        //     {
+        //         Debug.LogError("No ItemDatabase selected!");
+        //         return; // Return from the method if no ItemDatabase is selected
+        //     }
+
+        //     // Save the new GameObject as a prefab
+        //     PrefabUtility.SaveAsPrefabAssetAndConnect(newGameObject, "Assets/InventorySystem/Items/" + itemName + ".prefab", InteractionMode.UserAction);
+
+        //     AssetDatabase.CreateAsset(newItem, "Assets/InventorySystem/ItemScriptableObjects/" + itemName + ".asset");
+        //     AssetDatabase.SaveAssets();
+        //     EditorUtility.FocusProjectWindow();
+        //     Selection.activeObject = newItem;
+        // }
+
         if (GUILayout.Button("Create Item"))
         {
             Item newItem = ScriptableObject.CreateInstance<Item>();
@@ -63,16 +121,31 @@ public class ItemEditor : EditorWindow
             newItem.itemIcon = itemIcon;
             newItem.stackable = stackable;
             newItem.pickupPrefab = pickupPrefab;
-            newItem.pickupPromptPrefab = pickupPromptPrefab;
+            newItem.pickupPromptPrefab = pickupPromptPrefab; // Assign the pickupPromptPrefab field
             newItem.itemType = itemType;
             newItem.statModifications = statModifications;
 
-            Pickup pickup = newItem.pickupPrefab.AddComponent<Pickup>();
-            pickup.item = newItem;
+            // Save the new item as an asset
+            AssetDatabase.CreateAsset(newItem, "Assets/InventorySystem/ItemScriptableObjects/" + itemName + ".asset");
+            AssetDatabase.SaveAssets();
 
-            SphereCollider sphereCollider = newItem.pickupPrefab.AddComponent<SphereCollider>();
-            sphereCollider.radius = 2f;
-            sphereCollider.isTrigger = true;
+            // Instantiate the original prefab
+            GameObject newGameObject = GameObject.Instantiate(pickupPrefab);
+
+            Pickup pickup = newGameObject.GetComponent<Pickup>();
+            if (pickup == null) // If the Pickup component doesn't exist, add it
+            {
+                pickup = newGameObject.AddComponent<Pickup>();
+            }
+            pickup.item = newItem; // Now the item is already saved as an asset
+
+            SphereCollider sphereCollider = newGameObject.GetComponent<SphereCollider>();
+            if (sphereCollider == null) // If the SphereCollider component doesn't exist, add it
+            {
+                sphereCollider = newGameObject.AddComponent<SphereCollider>();
+                sphereCollider.radius = 2f;
+                sphereCollider.isTrigger = true;
+            }
 
             // Add the new item to the selected ItemDatabase
             if (itemDatabase != null)
@@ -85,11 +158,16 @@ public class ItemEditor : EditorWindow
                 return; // Return from the method if no ItemDatabase is selected
             }
 
-            AssetDatabase.CreateAsset(newItem, "Assets/InventorySystem/" + itemName + ".asset");
-            AssetDatabase.SaveAssets();
+            // Save the new GameObject as a prefab
+            PrefabUtility.SaveAsPrefabAssetAndConnect(newGameObject, "Assets/InventorySystem/Items/" + itemName + ".prefab", InteractionMode.UserAction);
+
+            // Destroy the new GameObject after saving it as a prefab
+            DestroyImmediate(newGameObject);
+
             EditorUtility.FocusProjectWindow();
             Selection.activeObject = newItem;
         }
+
     }
 
     ItemDatabase CreateNewItemDatabase()
