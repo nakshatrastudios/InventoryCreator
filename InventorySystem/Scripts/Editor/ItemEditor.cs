@@ -12,6 +12,7 @@ public class ItemEditor : EditorWindow
     GameObject pickupPromptPrefab;
     List<Item.StatModification> statModifications = new List<Item.StatModification>();
     Item.ItemType itemType;
+    ItemDatabase itemDatabase; // Field for selecting an ItemDatabase
 
     [MenuItem("Inventory System/Create Item")]
     public static void ShowWindow()
@@ -29,6 +30,15 @@ public class ItemEditor : EditorWindow
         pickupPrefab = (GameObject)EditorGUILayout.ObjectField("Pickup Prefab", pickupPrefab, typeof(GameObject), false);
         pickupPromptPrefab = (GameObject)EditorGUILayout.ObjectField("Pickup Prompt Prefab", pickupPromptPrefab, typeof(GameObject), false);
         itemType = (Item.ItemType)EditorGUILayout.EnumPopup("Item Type", itemType);
+
+        EditorGUILayout.BeginHorizontal();
+        itemDatabase = (ItemDatabase)EditorGUILayout.ObjectField("Item Database", itemDatabase, typeof(ItemDatabase), false);
+        if (GUILayout.Button("+"))
+        {
+            // Logic for creating a new ItemDatabase and adding it to your list of databases
+            itemDatabase = CreateNewItemDatabase();
+        }
+        EditorGUILayout.EndHorizontal(); // Close the horizontal group
 
         GUILayout.Label("Stat Modification", EditorStyles.boldLabel);
         for (int i = 0; i < statModifications.Count; i++)
@@ -64,12 +74,30 @@ public class ItemEditor : EditorWindow
             sphereCollider.radius = 2f;
             sphereCollider.isTrigger = true;
 
+            // Add the new item to the selected ItemDatabase
+            if (itemDatabase != null)
+            {
+                itemDatabase.items.Add(newItem);
+            }
+            else
+            {
+                Debug.LogError("No ItemDatabase selected!");
+                return; // Return from the method if no ItemDatabase is selected
+            }
+
             AssetDatabase.CreateAsset(newItem, "Assets/InventorySystem/" + itemName + ".asset");
             AssetDatabase.SaveAssets();
-
             EditorUtility.FocusProjectWindow();
             Selection.activeObject = newItem;
         }
+    }
+
+    ItemDatabase CreateNewItemDatabase()
+    {
+        ItemDatabase newItemDatabase = ScriptableObject.CreateInstance<ItemDatabase>();
+        AssetDatabase.CreateAsset(newItemDatabase, "Assets/InventorySystem/NewItemDatabase.asset");
+        AssetDatabase.SaveAssets();
+        return newItemDatabase;
     }
 }
 
